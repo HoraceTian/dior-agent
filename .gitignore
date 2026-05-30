@@ -1,0 +1,12 @@
+.idea
+dior-agent.iml
+.omx/
+node_modules/
+dist/
+dist-vite/
+coverage/
+.env
+.env.*
+!.env.example
+bun.lockb
+.npm-cache/
