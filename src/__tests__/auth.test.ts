@@ -161,6 +161,10 @@ function testConfig(authOverrides: Partial<AppConfig['auth']> = {}): AppConfig {
         serviceName: 'dior-agent-test',
         host: '127.0.0.1',
         port: 0,
+        dataDir: '.data-test',
+        workspaceRoot: '.workspaces-test',
+        modelConfigPath: '.models-test.toml',
+        modelConfigWatch: false,
         auth: {
             staticToken: 'test-token',
             allowInsecureDev: false,

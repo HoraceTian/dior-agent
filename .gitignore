@@ -1,6 +1,7 @@
 .idea
 dior-agent.iml
 .omx/
+.data/
 node_modules/
 dist/
 dist-vite/

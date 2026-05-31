@@ -1,0 +1,13 @@
+llm_provider = "ollama"
+
+########## Ollama Settings
+# No need to set it unless you want to use your own proxy
+ollama_base_url = "http://localhost:11434"
+# Check your available models at https://ollama.com/library
+ollama_model_name = "deepseek-r1:70b"
+
+########## OpenAI Settings
+# Keep secrets in env instead of this file
+openai_api_key_env = "OPENAI_API_KEY"
+openai_base_url = "https://api.openai.com/v1"
+openai_model_name = "gpt-4.1-mini"

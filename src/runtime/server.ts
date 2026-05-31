@@ -12,11 +12,17 @@ export type RunningAgentServer = {
 }
 
 export async function startAgentServer(context: AppContext): Promise<RunningAgentServer> {
+    await context.modelConfigs.start()
     const httpApp = createHonoHttpApp(context)
     const server = createServer(getRequestListener(httpApp.fetch))
     const websocket = attachWebSocketGateway({ context, server })
 
-    await listen(server, context.config.port, context.config.host)
+    try {
+        await listen(server, context.config.port, context.config.host)
+    } catch (error) {
+        await context.modelConfigs.stop()
+        throw error
+    }
 
     const address = getAddressInfo(server)
 
@@ -26,6 +32,7 @@ export async function startAgentServer(context: AppContext): Promise<RunningAgen
         async stop() {
             await websocket.close()
             await close(server)
+            await context.modelConfigs.stop()
         },
     }
 }

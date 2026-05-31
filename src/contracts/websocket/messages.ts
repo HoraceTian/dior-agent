@@ -1,6 +1,11 @@
+import { SessionEventSchema } from 'src/domain/sessions/sessionEvents.js'
 import { z } from 'zod'
 
 export const JsonObjectSchema = z.record(z.string(), z.unknown())
+const StorageIdSchema = z
+    .string()
+    .min(1)
+    .regex(/^[a-zA-Z0-9_-]+$/)
 
 export const ClientMessageSchema = z.discriminatedUnion('type', [
     z.object({
@@ -8,10 +13,29 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
         id: z.string().min(1).optional(),
     }),
     z.object({
-        type: z.literal('agent.message'),
-        id: z.string().min(1),
+        type: z.literal('session.create'),
+        id: z.string().min(1).optional(),
+        metadata: JsonObjectSchema.optional(),
+    }),
+    z.object({
+        type: z.literal('session.attach'),
+        id: z.string().min(1).optional(),
+        sessionId: StorageIdSchema,
+        lastSeq: z.number().int().min(0).default(0),
+    }),
+    z.object({
+        type: z.literal('turn.start'),
+        id: StorageIdSchema,
+        sessionId: StorageIdSchema,
         input: z.string().trim().min(1),
         metadata: JsonObjectSchema.optional(),
+    }),
+    z.object({
+        type: z.literal('turn.cancel'),
+        id: z.string().min(1).optional(),
+        sessionId: StorageIdSchema,
+        turnId: StorageIdSchema,
+        reason: z.string().min(1).optional(),
     }),
 ])
 
@@ -21,6 +45,12 @@ export const ProtocolErrorCodeSchema = z.enum([
     'message_too_large',
     'agent_error',
     'unauthorized',
+    'forbidden',
+    'session_not_found',
+    'session_not_attached',
+    'lease_conflict',
+    'turn_in_progress',
+    'turn_not_found',
 ])
 
 export const ServerMessageSchema = z.discriminatedUnion('type', [
@@ -36,14 +66,21 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
         serverTime: z.string().min(1),
     }),
     z.object({
-        type: z.literal('agent.message.received'),
-        id: z.string().min(1),
+        type: z.literal('session.ready'),
+        id: z.string().min(1).optional(),
+        sessionId: z.string().min(1),
+        lastSeq: z.number().int().min(0),
+        replayedEvents: z.number().int().min(0),
     }),
     z.object({
-        type: z.literal('agent.message.result'),
+        type: z.literal('session.event'),
+        event: SessionEventSchema,
+    }),
+    z.object({
+        type: z.literal('turn.accepted'),
         id: z.string().min(1),
-        output: z.string(),
-        metadata: JsonObjectSchema.optional(),
+        sessionId: z.string().min(1),
+        turnId: z.string().min(1),
     }),
     z.object({
         type: z.literal('error'),

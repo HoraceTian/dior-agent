@@ -1,9 +1,9 @@
-import type { AgentRuntime, AgentTurnRequest, AgentTurnResult } from './agentRuntime.js'
+import type { AgentRuntime, AgentTurnRequest, AgentTurnStream } from './agentRuntime.js'
 
 export class AgentService {
     constructor(private readonly runtime: AgentRuntime) {}
 
-    async handleTurn(request: AgentTurnRequest): Promise<AgentTurnResult> {
-        return this.runtime.handleTurn(request)
+    runTurn(request: AgentTurnRequest): AgentTurnStream {
+        return this.runtime.runTurn(request)
     }
 }
