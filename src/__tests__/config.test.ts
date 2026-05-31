@@ -24,12 +24,14 @@ describe('loadConfig', () => {
             AGENT_WORKSPACE_ROOT: '.private-workspaces',
             AGENT_MODEL_CONFIG_PATH: '.private-models.toml',
             AGENT_MODEL_CONFIG_WATCH: '0',
+            AGENT_COLLECTORS_CONFIG_PATH: '.private-collectors.toml',
         })
 
         expect(config.port).toBe(9000)
         expect(config.workspaceRoot).toBe('.private-workspaces')
         expect(config.modelConfigPath).toBe('.private-models.toml')
         expect(config.modelConfigWatch).toBe(false)
+        expect(config.collectorsConfigPath).toBe('.private-collectors.toml')
         expect(config.maxMessageBytes).toBe(2048)
         expect(config.idleTimeoutMs).toBe(10000)
         expect(config.logLevel).toBe('debug')
@@ -48,5 +50,6 @@ describe('loadConfig', () => {
         expect(config.workspaceRoot).toBe('.data')
         expect(config.modelConfigPath).toBe('.config/models.toml')
         expect(config.modelConfigWatch).toBe(true)
+        expect(config.collectorsConfigPath).toBe('.config/collectors.toml')
     })
 })

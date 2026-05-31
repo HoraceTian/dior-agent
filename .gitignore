@@ -6,6 +6,10 @@ node_modules/
 dist/
 dist-vite/
 coverage/
+target/
+.cargo-home/
+.collector-data/
+collector.toml
 .env
 .env.*
 !.env.example

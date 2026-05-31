@@ -4,9 +4,11 @@ import { AgentService } from 'src/domain/agent/agentService.js'
 import type { ModelConfigManager } from 'src/domain/models/modelConfig.js'
 import type { SessionStore } from 'src/domain/sessions/sessionStore.js'
 import { SessionSupervisor } from 'src/domain/sessions/sessionSupervisor.js'
+import type { CollectorRegistryManager } from 'src/domain/tools/collectorRegistry.js'
 import { OpenAICompatibleChatClient } from 'src/infrastructure/llm/openAICompatibleChatClient.js'
 import { FileModelConfigManager } from 'src/infrastructure/models/fileModelConfigManager.js'
 import { FileSessionStore } from 'src/infrastructure/sessions/fileSessionStore.js'
+import { FileCollectorRegistryManager } from 'src/infrastructure/tools/fileCollectorRegistryManager.js'
 import { type Logger, createLogger } from 'src/observability/logger.js'
 
 export type AppContext = {
@@ -14,6 +16,7 @@ export type AppContext = {
     logger: Logger
     agent: AgentService
     modelConfigs: ModelConfigManager
+    collectors: CollectorRegistryManager
     sessions: SessionSupervisor
 }
 
@@ -23,6 +26,7 @@ export type AppContextOptions = {
     runtime?: AgentRuntime
     sessionStore?: SessionStore
     modelConfigs?: ModelConfigManager
+    collectors?: CollectorRegistryManager
 }
 
 export function createAppContext(options: AppContextOptions): AppContext {
@@ -45,6 +49,12 @@ export function createAppContext(options: AppContextOptions): AppContext {
             logger,
             watch: options.config.modelConfigWatch,
         })
+    const collectors =
+        options.collectors ??
+        new FileCollectorRegistryManager({
+            path: options.config.collectorsConfigPath,
+            logger,
+        })
     const sessions = new SessionSupervisor({
         holderId: createHolderId(options.config.serviceName),
         store: sessionStore,
@@ -58,6 +68,7 @@ export function createAppContext(options: AppContextOptions): AppContext {
         logger,
         agent,
         modelConfigs,
+        collectors,
         sessions,
     }
 }

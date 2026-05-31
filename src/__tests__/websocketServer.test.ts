@@ -235,6 +235,7 @@ function testConfig(workspaceRoot: string): AppConfig {
         workspaceRoot,
         modelConfigPath: join(workspaceRoot, 'models.toml'),
         modelConfigWatch: false,
+        collectorsConfigPath: join(workspaceRoot, 'collectors.toml'),
         auth: {
             staticToken: 'test-token',
             allowInsecureDev: false,

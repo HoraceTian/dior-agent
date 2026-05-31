@@ -5,6 +5,7 @@ const DEFAULT_PORT = 8787
 const DEFAULT_HOST = '0.0.0.0'
 const DEFAULT_WORKSPACE_ROOT = '.data'
 const DEFAULT_MODEL_CONFIG_PATH = '.config/models.toml'
+const DEFAULT_COLLECTORS_CONFIG_PATH = '.config/collectors.toml'
 const DEFAULT_MAX_MESSAGE_BYTES = 64 * 1024
 const DEFAULT_IDLE_TIMEOUT_MS = 120_000
 
@@ -27,6 +28,7 @@ export type AppConfig = {
     workspaceRoot: string
     modelConfigPath: string
     modelConfigWatch: boolean
+    collectorsConfigPath: string
     auth: AppAuthConfig
     maxMessageBytes: number
     idleTimeoutMs: number
@@ -41,6 +43,7 @@ export const AppConfigSchema = z
         workspaceRoot: z.string().min(1),
         modelConfigPath: z.string().min(1),
         modelConfigWatch: z.boolean(),
+        collectorsConfigPath: z.string().min(1),
         auth: z.object({
             staticToken: z.string().min(1).optional(),
             allowInsecureDev: z.boolean(),
@@ -93,6 +96,8 @@ export function loadConfig(env: Env = process.env): AppConfig {
         workspaceRoot: nonEmpty(env.AGENT_WORKSPACE_ROOT) ?? DEFAULT_WORKSPACE_ROOT,
         modelConfigPath: nonEmpty(env.AGENT_MODEL_CONFIG_PATH) ?? DEFAULT_MODEL_CONFIG_PATH,
         modelConfigWatch: parseBooleanWithDefault(env.AGENT_MODEL_CONFIG_WATCH, true),
+        collectorsConfigPath:
+            nonEmpty(env.AGENT_COLLECTORS_CONFIG_PATH) ?? DEFAULT_COLLECTORS_CONFIG_PATH,
         auth: {
             staticToken: nonEmpty(env.AGENT_API_TOKEN),
             allowInsecureDev: parseBoolean(env.AGENT_ALLOW_INSECURE_DEV),

@@ -28,6 +28,9 @@ src/
   runtime/        进程级 server 生命周期
   shared/         ID 等无业务共享工具
   transports/     HTTP、WebSocket、鉴权等传输层 adapter
+
+packages/
+  collector/      Rust 实现的端侧/节点侧 tool collector
 ```
 
 ## 本地运行
@@ -43,6 +46,7 @@ AGENT_API_TOKEN=local-dev-token bun run dev
 默认工作区根目录是 `.data`，可通过 `AGENT_WORKSPACE_ROOT` 调整。这个根目录同时承载 session
 元数据、事件日志和每个 session 的实际 workspace，便于部署时挂载单个卷。
 模型配置默认读取 `.config/models.toml`，可通过 `AGENT_MODEL_CONFIG_PATH` 调整；默认开启文件监听热更新。
+Collector 发现配置默认读取 `.config/collectors.toml`，可通过 `AGENT_COLLECTORS_CONFIG_PATH` 调整。
 
 WebSocket 地址：
 
@@ -194,6 +198,61 @@ openai_model_name = "gpt-4.1-mini"
     }
 }
 ```
+
+## Collector 与 Tool 宿主
+
+Tool 系统按“主 Agent 服务 + 多个 collector 工具宿主”设计。主服务只负责发现、注册、路由和审计；
+collector 独立部署在服务器、本机或日志节点上，负责暴露该节点允许访问的本地上下文和工具。
+
+Rust collector 位于 `packages/collector/`。启动前复制示例配置：
+
+```bash
+cp packages/collector/collector.example.toml collector.toml
+DIOR_COLLECTOR_TOKEN=local-collector-token cargo run -p dior-collector
+```
+
+collector 默认读取 `COLLECTOR_CONFIG`，未设置时读取当前目录的 `collector.toml`。每个部署节点应该在
+`collector.description` 里描述自己的机器角色，后续提示词会用它辅助模型选择同名工具所在的 collector：
+
+```toml
+[collector]
+id = "local-dev"
+name = "Local Dev Collector"
+description = "Developer workstation collector. Use it for local machine context and read-only development environment inspection."
+```
+
+第一阶段已实现：
+
+```text
+GET  /health
+GET  /v1/manifest
+POST /v1/tools/{toolName}/invoke
+```
+
+`/v1/manifest` 和 `/v1/tools/.../invoke` 需要 `Authorization: Bearer <token>` 或
+`x-collector-token`。当前内置的 MVP 工具是只读的 `system.info`。
+
+主服务通过 `.config/collectors.toml` 发现 collector：
+
+```toml
+[[collectors]]
+id = "local-dev"
+url = "http://127.0.0.1:9701"
+token_env = "DIOR_COLLECTOR_TOKEN"
+enabled = true
+trust = "private"
+```
+
+collector 被发现不等于所有 session 都能调用。后续 tool loop 接入时会继续拆成：
+
+```text
+CollectorDirectory      全局发现了哪些 collector/tools
+AgentProfile            agent 默认允许哪些工具
+SessionToolPolicy       当前 session 实际启用了哪些工具
+TurnSnapshot            当前 turn 固定使用哪一版工具清单
+```
+
+因此 collector 是共享基础设施，工具授权仍然保持 session 级隔离。
 
 ## 消息协议
 

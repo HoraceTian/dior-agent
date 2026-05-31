@@ -164,6 +164,7 @@ function testConfig(authOverrides: Partial<AppConfig['auth']> = {}): AppConfig {
         workspaceRoot: '.data-test',
         modelConfigPath: '.models-test.toml',
         modelConfigWatch: false,
+        collectorsConfigPath: '.collectors-test.toml',
         auth: {
             staticToken: 'test-token',
             allowInsecureDev: false,

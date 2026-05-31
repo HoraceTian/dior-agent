@@ -28,6 +28,7 @@ export function createHonoHttpApp(context: AppContext): Hono {
             status: 'ready',
             service: context.config.serviceName,
             websocket: '/ws',
+            collectors: context.collectors.getSnapshot().collectors.length,
         }),
     )
 

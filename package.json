@@ -23,7 +23,8 @@
         "page:dev": "bun run --cwd page dev",
         "page:build": "bun run --cwd page build",
         "page:typecheck": "bun run --cwd page typecheck",
-        "test:all": "bun run typecheck && bun run check && bun test && bun run build && bun run build:vite && bun run page:build"
+        "collector:check": "CARGO_HOME=.cargo-home cargo check -p dior-collector",
+        "test:all": "bun run typecheck && bun run check && bun test && bun run build && bun run build:vite && bun run page:build && bun run collector:check"
     },
     "dependencies": {
         "@hono/node-server": "^2.0.4",
