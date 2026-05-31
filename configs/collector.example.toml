@@ -1,0 +1,20 @@
+[collector]
+id = "local-dev"
+name = "Local Dev Collector"
+description = "Developer workstation collector. Use it for local machine context and read-only development environment inspection."
+bind = "127.0.0.1:9701"
+public_url = "http://127.0.0.1:9701"
+data_dir = ".collector-data"
+default_timeout_ms = 10000
+max_result_bytes = 65536
+max_concurrent_invocations = 8
+
+[auth]
+mode = "static-token"
+token_env = "DIOR_COLLECTOR_TOKEN"
+
+[tools]
+enabled = [
+    "system.info",
+]
+

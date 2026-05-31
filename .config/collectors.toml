@@ -1,5 +1,5 @@
-# Collector discovery config for the TypeScript gateway.
-# Set enabled = true after starting a matching Rust collector.
+# Collector discovery config for the Go gateway.
+# Set enabled = true after starting a matching Go collector.
 
 [[collectors]]
 id = "local-dev"

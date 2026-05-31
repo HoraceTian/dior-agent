@@ -6,8 +6,11 @@ node_modules/
 dist/
 dist-vite/
 coverage/
-target/
+.go-cache/
+.gomodcache/
+.gopath/
 .cargo-home/
+target/
 .collector-data/
 collector.toml
 .env
