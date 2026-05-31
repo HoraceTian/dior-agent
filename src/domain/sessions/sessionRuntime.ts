@@ -1,3 +1,4 @@
+import type { AgentMessage } from 'src/domain/agent/agentMessages.js'
 import type { AgentRuntimeEvent } from 'src/domain/agent/agentRuntime.js'
 import type { AgentService } from 'src/domain/agent/agentService.js'
 import { type ModelConfigProvider, createTurnModelRecord } from 'src/domain/models/modelConfig.js'
@@ -42,6 +43,7 @@ export class SessionRuntime {
         const abortController = new AbortController()
         const modelSnapshot = this.options.modelConfigs.getSnapshot()
         const model = createTurnModelRecord(modelSnapshot)
+        const history = await this.readConversationHistory()
         const record: TurnRecord = {
             sessionId: this.options.sessionId,
             turnId: input.turnId,
@@ -85,6 +87,7 @@ export class SessionRuntime {
                 turnId: input.turnId,
                 connectionId: input.connectionId,
                 input: input.input,
+                history,
                 metadata: input.metadata,
                 model: modelSnapshot,
                 signal: abortController.signal,
@@ -242,6 +245,38 @@ export class SessionRuntime {
             message,
             ...(fields ? { fields } : {}),
         })
+    }
+
+    private async readConversationHistory(): Promise<AgentMessage[]> {
+        const events = await this.options.store.readEventsAfter(this.options.sessionId, 0)
+        const turnInputs = new Map<string, string>()
+        const messages: AgentMessage[] = []
+
+        for (const event of events) {
+            if (event.type === 'turn.started') {
+                turnInputs.set(event.turnId, event.input)
+                continue
+            }
+
+            if (event.type !== 'assistant.message') continue
+
+            const input = turnInputs.get(event.turnId)
+            if (!input) continue
+
+            messages.push(
+                {
+                    role: 'user',
+                    content: input,
+                },
+                {
+                    role: 'assistant',
+                    content: event.content,
+                },
+            )
+            turnInputs.delete(event.turnId)
+        }
+
+        return messages
     }
 }
 

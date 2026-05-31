@@ -4,6 +4,7 @@ import { AgentService } from 'src/domain/agent/agentService.js'
 import type { ModelConfigManager } from 'src/domain/models/modelConfig.js'
 import type { SessionStore } from 'src/domain/sessions/sessionStore.js'
 import { SessionSupervisor } from 'src/domain/sessions/sessionSupervisor.js'
+import { OpenAICompatibleChatClient } from 'src/infrastructure/llm/openAICompatibleChatClient.js'
 import { FileModelConfigManager } from 'src/infrastructure/models/fileModelConfigManager.js'
 import { FileSessionStore } from 'src/infrastructure/sessions/fileSessionStore.js'
 import { type Logger, createLogger } from 'src/observability/logger.js'
@@ -26,7 +27,11 @@ export type AppContextOptions = {
 
 export function createAppContext(options: AppContextOptions): AppContext {
     const logger = options.logger ?? createLogger({ level: options.config.logLevel })
-    const runtime = options.runtime ?? createAgentRuntime()
+    const runtime =
+        options.runtime ??
+        createAgentRuntime({
+            modelClient: new OpenAICompatibleChatClient(),
+        })
     const agent = new AgentService(runtime)
     const sessionStore =
         options.sessionStore ??

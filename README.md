@@ -96,6 +96,9 @@ pod
 - `src/transports/websocket/`: 连接认证、消息解析、协议响应。
 - `src/domain/sessions/sessionSupervisor.ts`: 管理多个 session-runtime，负责 create/attach/turn/cancel 和 lease。
 - `src/domain/sessions/sessionRuntime.ts`: 单 session 串行执行 turn，把 runtime 输出转成事件。
+- `src/domain/agent/agentRuntime.ts`: 无工具系统的核心对话 runtime，负责组装消息历史、调用模型流、产出 assistant delta。
+- `src/infrastructure/llm/openAICompatibleChatClient.ts`: OpenAI-compatible Chat Completions streaming transport，负责 fetch 和流解析。
+- `src/infrastructure/llm/modelProviderStrategy.ts`: 模型 provider 策略层，负责 Ollama/OpenAI 的 URL、鉴权和 request body 差异。
 - `src/infrastructure/sessions/fileSessionStore.ts`: 目录型持久化，后续可替换为进程/容器型 runtime 管理。
 
 每个 session 一个目录：
@@ -120,6 +123,10 @@ pod
 `logs/runtime.log`，用 JSONL 记录 turn started/completed/failed/cancelled 等运行状态。
 实际工作区不再放在 session 元数据目录内，而是放在 `AGENT_WORKSPACE_ROOT/<sessionId>`；`manifest.json`
 会记录对应的 `workspacePath`。
+
+每次 turn 开始时，`sessionRuntime` 会从 `events.jsonl` 重建轻量 conversation history，再交给
+`AgentRuntime` 追加本轮 user message 并调用模型。这样 gateway/supervisor 重启后，attach 同一个 session
+仍能延续上下文。当前历史只包含已完成的 user/assistant 文本回合；Tool system 暂未接入。
 
 ## 模型配置
 
@@ -219,8 +226,9 @@ bun run build:vite
 ## 分层说明
 
 - `src/contracts/websocket/`: 对外 WebSocket 协议，只放 schema、codec、协议类型。
-- `src/domain/agent/`: agent runtime 业务边界。后续接模型、工具、队列时从这里扩展。
+- `src/domain/agent/`: agent runtime 业务边界，包含系统提示词、消息类型、模型客户端 contract 和对话 runtime。
 - `src/domain/sessions/`: session supervisor/runtime/store contract。这里是未来拆进程、容器、Pod 的核心边界。
+- `src/infrastructure/llm/`: 模型 provider adapter。当前用 strategy pattern 拆分 provider 差异，默认策略是 Ollama OpenAI-compatible 和 OpenAI Chat Completions。
 - `src/infrastructure/sessions/`: 当前文件型 session store，负责目录结构和 JSONL 事件流。
 - `src/domain/auth/`: 认证策略、常量时间 token 校验、认证主体。
 - `src/transports/auth/`: WebSocket upgrade 认证 adapter，负责 Origin allowlist 和 Bearer/cookie/query 凭证提取。
@@ -228,6 +236,5 @@ bun run build:vite
 - `src/transports/websocket/`: `ws` upgrade、连接生命周期、消息分发。
 - `src/runtime/server.ts`: 把 Hono HTTP app 和 WebSocket gateway 挂到同一个 HTTP server。
 
-`src/domain/agent/agentRuntime.ts` 是后续接入真实模型、任务队列、工具系统或业务服务的主要扩展点。
-`AgentRuntime.runTurn()` 已经是 async generator，能够逐步产出 assistant delta、tool use、tool result，再由
-`SessionRuntime` 统一持久化为 session event。
+`AgentRuntime.runTurn()` 是 async generator，会逐步产出 assistant delta，再由 `SessionRuntime` 统一持久化为
+session event。协议层已经预留 tool use/tool result 事件类型，但当前 runtime 不会触发工具执行。

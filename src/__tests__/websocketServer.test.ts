@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createAppContext } from 'src/app/container.js'
 import type { AppConfig } from 'src/config/env.js'
+import type { AgentRuntime } from 'src/domain/agent/agentRuntime.js'
 import { createLogger } from 'src/observability/logger.js'
 import { type RunningAgentServer, startAgentServer } from 'src/runtime/server.js'
 import { type RawData, WebSocket } from 'ws'
@@ -27,6 +28,7 @@ describe('websocket agent server', () => {
         const context = createAppContext({
             config: testConfig(dataDir, workspaceRoot),
             logger: createLogger({ level: 'error' }),
+            runtime: createTestRuntime(),
         })
         const server = await startAgentServer(context)
         servers.push(server)
@@ -119,6 +121,7 @@ describe('websocket agent server', () => {
         const context = createAppContext({
             config: testConfig(dataDir, join(dataDir, 'workspaces')),
             logger: createLogger({ level: 'error' }),
+            runtime: createTestRuntime(),
         })
         const server = await startAgentServer(context)
         servers.push(server)
@@ -145,6 +148,7 @@ describe('websocket agent server', () => {
         const context = createAppContext({
             config: testConfig(dataDir, join(dataDir, 'workspaces')),
             logger: createLogger({ level: 'error' }),
+            runtime: createTestRuntime(),
         })
         const server = await startAgentServer(context)
         servers.push(server)
@@ -202,6 +206,7 @@ describe('websocket agent server', () => {
         const context = createAppContext({
             config: testConfig(dataDir, join(dataDir, 'workspaces')),
             logger: createLogger({ level: 'error' }),
+            runtime: createTestRuntime(),
         })
         const server = await startAgentServer(context)
         servers.push(server)
@@ -239,6 +244,31 @@ function testConfig(dataDir: string, workspaceRoot: string): AppConfig {
         maxMessageBytes: 65_536,
         idleTimeoutMs: 30_000,
         logLevel: 'error',
+    }
+}
+
+function createTestRuntime(): AgentRuntime {
+    return {
+        async *runTurn(request) {
+            const output = `Agent received: ${request.input}`
+            yield {
+                type: 'assistant.delta',
+                text: output,
+            }
+
+            return {
+                output,
+                metadata: {
+                    runtime: 'test',
+                    connectionId: request.connectionId,
+                    sessionId: request.sessionId,
+                    turnId: request.turnId,
+                    modelProvider: request.model.provider,
+                    modelName: request.model.resolved.modelName,
+                    modelConfigVersion: request.model.version,
+                },
+            }
+        },
     }
 }
 
