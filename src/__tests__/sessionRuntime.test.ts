@@ -12,20 +12,19 @@ import type { SessionEvent } from 'src/domain/sessions/sessionEvents.js'
 import { SessionRuntime } from 'src/domain/sessions/sessionRuntime.js'
 import { FileSessionStore } from 'src/infrastructure/sessions/fileSessionStore.js'
 
-const tempDataDirs: string[] = []
+const tempWorkspaceRoots: string[] = []
 
 afterEach(async () => {
-    while (tempDataDirs.length > 0) {
-        await rm(tempDataDirs.pop() ?? '', { recursive: true, force: true })
+    while (tempWorkspaceRoots.length > 0) {
+        await rm(tempWorkspaceRoots.pop() ?? '', { recursive: true, force: true })
     }
 })
 
 describe('SessionRuntime', () => {
     test('rebuilds conversation history from persisted session events', async () => {
-        const dataDir = await createTempDataDir()
+        const workspaceRoot = await createTempWorkspaceRoot()
         const store = new FileSessionStore({
-            dataDir,
-            workspaceRoot: join(dataDir, 'workspaces'),
+            workspaceRoot,
         })
         const sessionId = 'session_1'
         const ownerId = 'owner_1'
@@ -138,8 +137,8 @@ async function collectEvents(stream: AsyncGenerator<SessionEvent>): Promise<Sess
     return events
 }
 
-async function createTempDataDir(): Promise<string> {
+async function createTempWorkspaceRoot(): Promise<string> {
     const directory = await mkdtemp(join(tmpdir(), 'dior-agent-session-runtime-'))
-    tempDataDirs.push(directory)
+    tempWorkspaceRoots.push(directory)
     return directory
 }

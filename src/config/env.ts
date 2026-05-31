@@ -1,10 +1,9 @@
-import { join } from 'node:path'
 import type { AuthPolicy } from 'src/domain/auth/authenticator.js'
 import { z } from 'zod'
 
 const DEFAULT_PORT = 8787
 const DEFAULT_HOST = '0.0.0.0'
-const DEFAULT_DATA_DIR = '.data'
+const DEFAULT_WORKSPACE_ROOT = '.data'
 const DEFAULT_MODEL_CONFIG_PATH = '.config/models.toml'
 const DEFAULT_MAX_MESSAGE_BYTES = 64 * 1024
 const DEFAULT_IDLE_TIMEOUT_MS = 120_000
@@ -25,7 +24,6 @@ export type AppConfig = {
     serviceName: string
     host: string
     port: number
-    dataDir: string
     workspaceRoot: string
     modelConfigPath: string
     modelConfigWatch: boolean
@@ -40,7 +38,6 @@ export const AppConfigSchema = z
         serviceName: z.string().min(1),
         host: z.string().min(1),
         port: z.number().int().min(0).max(65_535),
-        dataDir: z.string().min(1),
         workspaceRoot: z.string().min(1),
         modelConfigPath: z.string().min(1),
         modelConfigWatch: z.boolean(),
@@ -89,13 +86,11 @@ export const AppConfigSchema = z
 type Env = Record<string, string | undefined>
 
 export function loadConfig(env: Env = process.env): AppConfig {
-    const dataDir = nonEmpty(env.AGENT_DATA_DIR) ?? DEFAULT_DATA_DIR
     const parsed = AppConfigSchema.safeParse({
         serviceName: nonEmpty(env.AGENT_SERVICE_NAME) ?? 'dior-agent',
         host: nonEmpty(env.AGENT_HOST) ?? DEFAULT_HOST,
         port: parseInteger(env.AGENT_PORT, DEFAULT_PORT),
-        dataDir,
-        workspaceRoot: nonEmpty(env.AGENT_WORKSPACE_ROOT) ?? join(dataDir, 'workspaces'),
+        workspaceRoot: nonEmpty(env.AGENT_WORKSPACE_ROOT) ?? DEFAULT_WORKSPACE_ROOT,
         modelConfigPath: nonEmpty(env.AGENT_MODEL_CONFIG_PATH) ?? DEFAULT_MODEL_CONFIG_PATH,
         modelConfigWatch: parseBooleanWithDefault(env.AGENT_MODEL_CONFIG_WATCH, true),
         auth: {

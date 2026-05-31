@@ -21,14 +21,12 @@ describe('loadConfig', () => {
             AGENT_IDLE_TIMEOUT_MS: '10000',
             AGENT_LOG_LEVEL: 'debug',
             AGENT_ALLOWED_ORIGINS: 'https://private.example/, https://admin.example',
-            AGENT_DATA_DIR: '.private-data',
             AGENT_WORKSPACE_ROOT: '.private-workspaces',
             AGENT_MODEL_CONFIG_PATH: '.private-models.toml',
             AGENT_MODEL_CONFIG_WATCH: '0',
         })
 
         expect(config.port).toBe(9000)
-        expect(config.dataDir).toBe('.private-data')
         expect(config.workspaceRoot).toBe('.private-workspaces')
         expect(config.modelConfigPath).toBe('.private-models.toml')
         expect(config.modelConfigWatch).toBe(false)
@@ -42,13 +40,12 @@ describe('loadConfig', () => {
         ])
     })
 
-    test('defaults workspace root under data dir', () => {
+    test('defaults workspace root to .data', () => {
         const config = loadConfig({
             AGENT_API_TOKEN: 'secret',
-            AGENT_DATA_DIR: '.private-data',
         })
 
-        expect(config.workspaceRoot).toBe('.private-data/workspaces')
+        expect(config.workspaceRoot).toBe('.data')
         expect(config.modelConfigPath).toBe('.config/models.toml')
         expect(config.modelConfigWatch).toBe(true)
     })

@@ -23,10 +23,9 @@ afterEach(async () => {
 
 describe('websocket agent server', () => {
     test('accepts authenticated session turns and persists session events', async () => {
-        const dataDir = await createTempDataDir()
-        const workspaceRoot = join(dataDir, 'workspaces')
+        const workspaceRoot = await createTempWorkspaceRoot()
         const context = createAppContext({
-            config: testConfig(dataDir, workspaceRoot),
+            config: testConfig(workspaceRoot),
             logger: createLogger({ level: 'error' }),
             runtime: createTestRuntime(),
         })
@@ -67,7 +66,7 @@ describe('websocket agent server', () => {
         expect(completedEvent.output).toBe('Agent received: hello')
 
         const eventsText = await readFile(
-            join(dataDir, 'sessions', sessionId, 'events.jsonl'),
+            join(workspaceRoot, 'sessions', sessionId, 'events.jsonl'),
             'utf8',
         )
         const persistedEventTypes = eventsText
@@ -83,7 +82,7 @@ describe('websocket agent server', () => {
         ])
 
         const runtimeLogText = await readFile(
-            join(dataDir, 'sessions', sessionId, 'logs', 'runtime.log'),
+            join(workspaceRoot, 'sessions', sessionId, 'logs', 'runtime.log'),
             'utf8',
         )
         const runtimeLogMessages = runtimeLogText
@@ -93,15 +92,17 @@ describe('websocket agent server', () => {
         expect(runtimeLogMessages).toEqual(['turn.started', 'turn.completed'])
 
         const manifestText = await readFile(
-            join(dataDir, 'sessions', sessionId, 'manifest.json'),
+            join(workspaceRoot, 'sessions', sessionId, 'manifest.json'),
             'utf8',
         )
         const manifest = JSON.parse(manifestText) as Record<string, unknown>
-        expect(manifest.workspacePath).toBe(join(workspaceRoot, sessionId))
-        expect((await stat(join(workspaceRoot, sessionId))).isDirectory()).toBe(true)
+        expect(manifest.workspacePath).toBe(join(workspaceRoot, 'sessions', sessionId, 'workspace'))
+        expect(
+            (await stat(join(workspaceRoot, 'sessions', sessionId, 'workspace'))).isDirectory(),
+        ).toBe(true)
 
         const turnText = await readFile(
-            join(dataDir, 'sessions', sessionId, 'turns', 'turn-1.json'),
+            join(workspaceRoot, 'sessions', sessionId, 'turns', 'turn-1.json'),
             'utf8',
         )
         const turn = JSON.parse(turnText) as {
@@ -117,9 +118,9 @@ describe('websocket agent server', () => {
     })
 
     test('accepts browser-compatible cookie auth', async () => {
-        const dataDir = await createTempDataDir()
+        const workspaceRoot = await createTempWorkspaceRoot()
         const context = createAppContext({
-            config: testConfig(dataDir, join(dataDir, 'workspaces')),
+            config: testConfig(workspaceRoot),
             logger: createLogger({ level: 'error' }),
             runtime: createTestRuntime(),
         })
@@ -144,9 +145,9 @@ describe('websocket agent server', () => {
     })
 
     test('replays directory-backed session events after reconnect', async () => {
-        const dataDir = await createTempDataDir()
+        const workspaceRoot = await createTempWorkspaceRoot()
         const context = createAppContext({
-            config: testConfig(dataDir, join(dataDir, 'workspaces')),
+            config: testConfig(workspaceRoot),
             logger: createLogger({ level: 'error' }),
             runtime: createTestRuntime(),
         })
@@ -202,9 +203,9 @@ describe('websocket agent server', () => {
     })
 
     test('serves Hono health routes beside websocket transport', async () => {
-        const dataDir = await createTempDataDir()
+        const workspaceRoot = await createTempWorkspaceRoot()
         const context = createAppContext({
-            config: testConfig(dataDir, join(dataDir, 'workspaces')),
+            config: testConfig(workspaceRoot),
             logger: createLogger({ level: 'error' }),
             runtime: createTestRuntime(),
         })
@@ -220,20 +221,19 @@ describe('websocket agent server', () => {
     })
 })
 
-async function createTempDataDir(): Promise<string> {
+async function createTempWorkspaceRoot(): Promise<string> {
     const directory = await mkdtemp(join(tmpdir(), 'dior-agent-test-'))
     tempDataDirs.push(directory)
     return directory
 }
 
-function testConfig(dataDir: string, workspaceRoot: string): AppConfig {
+function testConfig(workspaceRoot: string): AppConfig {
     return {
         serviceName: 'dior-agent-test',
         host: '127.0.0.1',
         port: 0,
-        dataDir,
         workspaceRoot,
-        modelConfigPath: join(dataDir, 'models.toml'),
+        modelConfigPath: join(workspaceRoot, 'models.toml'),
         modelConfigWatch: false,
         auth: {
             staticToken: 'test-token',

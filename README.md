@@ -40,8 +40,8 @@ cp .env.example .env
 AGENT_API_TOKEN=local-dev-token bun run dev
 ```
 
-默认 session 数据目录是 `.data`，可通过 `AGENT_DATA_DIR` 调整。实际工作区根目录默认是
-`${AGENT_DATA_DIR}/workspaces`，也可以通过 `AGENT_WORKSPACE_ROOT` 单独配置，便于部署时挂载独立卷。
+默认工作区根目录是 `.data`，可通过 `AGENT_WORKSPACE_ROOT` 调整。这个根目录同时承载 session
+元数据、事件日志和每个 session 的实际 workspace，便于部署时挂载单个卷。
 模型配置默认读取 `.config/models.toml`，可通过 `AGENT_MODEL_CONFIG_PATH` 调整；默认开启文件监听热更新。
 
 WebSocket 地址：
@@ -79,6 +79,32 @@ AGENT_ALLOW_QUERY_TOKEN=1 AGENT_API_TOKEN=local-dev-token bun run dev
 curl http://localhost:8787/health
 ```
 
+## 前端控制台
+
+React 前端放在 `page/`，是一个独立的 Vite 子项目，直接对接 `/ws` 协议。
+
+```bash
+bun install --cwd page
+bun run page:dev
+```
+
+默认前端地址是：
+
+```text
+http://127.0.0.1:5173
+```
+
+浏览器 WebSocket 不能设置 `Authorization` header，所以前端默认使用 `agent_token` cookie
+进行认证。页面和服务端需要使用同一个 hostname，例如都使用 `127.0.0.1`。如果要使用 query token，
+需要服务端显式开启：
+
+```bash
+AGENT_ALLOW_QUERY_TOKEN=1 AGENT_API_TOKEN=local-dev-token bun run dev
+```
+
+前端提供完整主流程：连接 WebSocket、创建 session、attach 已有 session、发送 turn、流式显示
+assistant delta、取消运行中的 turn、查看 session seq 和活动日志。
+
 ## Session 运行模型
 
 当前落地结构：
@@ -115,14 +141,13 @@ pod
     objects/attachments/
     objects/tool-results/
     logs/
-  workspaces/<sessionId>/
+    workspace/
 ```
 
 `events.jsonl` 是主事件流；`state.json` 是可重建的快速索引；`lease.json` 是同 Pod/多进程演进时的单写入者保护。
 服务端日志仍然属于 gateway/supervisor 进程；session-runtime 诊断日志写入当前 session 目录下的
 `logs/runtime.log`，用 JSONL 记录 turn started/completed/failed/cancelled 等运行状态。
-实际工作区不再放在 session 元数据目录内，而是放在 `AGENT_WORKSPACE_ROOT/<sessionId>`；`manifest.json`
-会记录对应的 `workspacePath`。
+实际工作区放在当前 session 目录内的 `workspace/`；`manifest.json` 会记录对应的 `workspacePath`。
 
 每次 turn 开始时，`sessionRuntime` 会从 `events.jsonl` 重建轻量 conversation history，再交给
 `AgentRuntime` 追加本轮 user message 并调用模型。这样 gateway/supervisor 重启后，attach 同一个 session

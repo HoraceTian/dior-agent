@@ -36,7 +36,6 @@ export function createAppContext(options: AppContextOptions): AppContext {
     const sessionStore =
         options.sessionStore ??
         new FileSessionStore({
-            dataDir: options.config.dataDir,
             workspaceRoot: options.config.workspaceRoot,
         })
     const modelConfigs =

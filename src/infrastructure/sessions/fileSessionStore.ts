@@ -21,7 +21,6 @@ import type {
 const SESSION_ID_PATTERN = /^[a-zA-Z0-9_-]+$/
 
 export type FileSessionStoreOptions = {
-    dataDir: string
     workspaceRoot: string
 }
 
@@ -185,12 +184,12 @@ export class FileSessionStore implements SessionStore {
 
     getSessionDirectory(sessionId: string): string {
         assertSafeSessionId(sessionId)
-        return join(this.options.dataDir, 'sessions', sessionId)
+        return join(this.options.workspaceRoot, 'sessions', sessionId)
     }
 
     getSessionWorkspaceDirectory(sessionId: string): string {
         assertSafeSessionId(sessionId)
-        return join(this.options.workspaceRoot, sessionId)
+        return join(this.getSessionDirectory(sessionId), 'workspace')
     }
 
     private manifestPath(sessionId: string): string {

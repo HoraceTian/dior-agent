@@ -20,7 +20,10 @@
         "format": "biome format --write .",
         "check": "biome check .",
         "test": "bun test",
-        "test:all": "bun run typecheck && bun run check && bun test && bun run build && bun run build:vite"
+        "page:dev": "bun run --cwd page dev",
+        "page:build": "bun run --cwd page build",
+        "page:typecheck": "bun run --cwd page typecheck",
+        "test:all": "bun run typecheck && bun run check && bun test && bun run build && bun run build:vite && bun run page:build"
     },
     "dependencies": {
         "@hono/node-server": "^2.0.4",
